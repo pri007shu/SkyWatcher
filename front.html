@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Rotating Earth</title>
+</head>
+<style>
+    .heading{
+        font-size: 50px;
+    }
+    #element{
+    color:white;
+    }
+</style>
+<body>
+    <div class="heading">
+       
+        <span id="element"></span>
+    </div>
+    <div class="earth-container">
+        <video autoplay loop muted class="earth-video">
+            <source src="earth.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    <button id="navigate-button"><a href=main.html>Start</a></button>
+     <!-- Setup and start animation! -->
+     <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
+  <script>
+    var typed = new Typed('#element', {
+      strings: ['WELCOME TO OUR WEBSITE', 'SKY WATCHER'],
+      typeSpeed: 50,
+    });
+  </script>
+    
+</body>
+</html>

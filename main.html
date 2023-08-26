@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.108/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.108/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+  <style>
+    .info-box {
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 5px;
+      border-radius: 5px;
+      font-family: Arial, sans-serif;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    #airQualityBox {
+      top: 10px;
+      left: 10px;
+    }
+
+    #alertsBox {
+      top: 10px;
+      left: 220px;
+    }
+
+    #solarBox {
+          top: 10px;
+          left: 430px;
+        }
+
+    #currentWeatherBox {
+      top: 160px;
+      left: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="cesiumContainer"></div>
+  <div id="airQualityBox" class="info-box" style="height:120px;width: 200px;margin: 215px;"></div>
+  <div id="alertsBox" class="info-box" style="height:100px;width: 200px;margin:125px 905px;"></div>
+  <div id="solarBox" class="info-box" style="height:100px;width: 200px;margin:500px 635px;"></div>
+  <div id="currentWeatherBox" class="info-box" style="height:155px;width: 220px;margin:300px 235px;"></div>
+  <script type="module">
+    // Your access token can be found at: https://ion.cesium.com/tokens.
+    // This is the default access token from your ion account
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3MzExZmFjZi03OTc0LTQxNzUtOTE4Ny04YzIyMDg3NWNhOWUiLCJpZCI6MTYyNTc1LCJpYXQiOjE2OTI5NjM3Mjd9.yHr_ejICSfI5h9gw-ZJoXpFrNeqaVUw1aBy3tFxZ3yA';
+
+    // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrain: Cesium.Terrain.fromWorldTerrain(),
+    });
+
+    // Add Cesium OSM Buildings, a global 3D buildings layer.
+    const buildingTileset = await Cesium.createOsmBuildingsAsync();
+    viewer.scene.primitives.add(buildingTileset);
+
+    const airQualityBox = document.getElementById('airQualityBox');
+    const alertsBox = document.getElementById('alertsBox');
+    const solarBox = document.getElementById('solarBox');
+    const currentWeatherBox = document.getElementById('currentWeatherBox');
+
+    viewer.screenSpaceEventHandler.setInputAction(async function (event) {
+      const cartesian = viewer.camera.pickEllipsoid(event.position, viewer.scene.globe.ellipsoid);
+      if (cartesian) {
+        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+        const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+        const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+
+        const apiKey = 'ef087c71db304ef39c76121816c91903';
+
+        const weatherUrl = `https://api.weatherbit.io/v2.0/current/airquality?lat=${latitude}&lon=${longitude}&key=${apiKey}`;
+        const alertsUrl = `https://api.weatherbit.io/v2.0/alerts?lat=${latitude}&lon=${longitude}&key=${apiKey}`;
+        const solarUrl = `https://solarapi.onrender.com/calculate_percentage/?latitude=${latitude}&longitude=${longitude}`;
+        const currentWeatherUrl = `https://api.weatherbit.io/v2.0/current?lat=${latitude}&lon=${longitude}&key=${apiKey}&include=minutely`;
+
+        const [weatherResponse, alertsResponse, solarResponse, currentWeatherResponse] = await Promise.all([
+          fetch(weatherUrl), fetch(alertsUrl), fetch(solarUrl), fetch(currentWeatherUrl)
+        ]);
+
+        const weatherData = await weatherResponse.json();
+        const alertsData = await alertsResponse.json();
+        const solarData = await solarResponse.json();
+        const currentWeatherData = await currentWeatherResponse.json();
+
+        airQualityBox.innerHTML = `
+                    <p>City: ${weatherData.city_name}</p>
+                    <p>Country: ${weatherData.country_code}</p>
+                    <p>Air Quality Index (AQI): ${weatherData.data[0].aqi}</p>
+                `;
+
+        alertsBox.innerHTML = `
+                    <p>Weather Alerts: ${alertsData.alerts.length}</p>
+                `;
+
+        solarBox.innerHTML = `
+                    <p>Solar Percentage: ${solarData.percentage}%</p>
+                `;
+
+        currentWeatherBox.innerHTML = `
+                    <p>Current Temperature (Celsius): ${currentWeatherData.data[0].temp}</p>
+                    <p>Current Pressure (mbar): ${currentWeatherData.data[0].pres}</p>
+                    <p>Current Description: ${currentWeatherData.data[0].weather.description}</p>
+                `;
+      }
+      //   viewer.screenSpaceEventHandler.setInputAction(function (event) {
+      // showInfoBoxesWithTimeout(); // Call the function to show info boxes and hide them after 5 seconds
+
+      // ... (rest of the existing code)
+      showInfoBoxesWithTimeout();
+
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    function showInfoBoxesWithTimeout() {
+      // Show the info boxes by setting opacity to 1
+      airQualityBox.style.opacity = '1';
+      alertsBox.style.opacity = '1';
+      solarBox.style.opacity = '1';
+      currentWeatherBox.style.opacity = '1';
+
+      // Hide the info boxes after 2 seconds
+      setTimeout(() => {
+        airQualityBox.style.opacity = '0';
+        alertsBox.style.opacity = '0';
+        solarBox.style.opacity = '0';
+        currentWeatherBox.style.opacity = '0';
+      }, 2000);
+    }
+  </script>
+</body>
+
+</html>
